@@ -44,5 +44,7 @@ public class SesionService {
         registrar("Ana Pérez", "51234567", "Prog 2");
         registrar("Luis Gómez", "49887766", "Prog 1");
         registrar("Camila Díaz", "53422110", "Base de Datos");
+        // NUEVO: método que devuelve el total de inscripciones
+    // NUEVO: método que devuelve el total de inscripciones
     }
 }

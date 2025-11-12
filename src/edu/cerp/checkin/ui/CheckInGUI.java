@@ -1,109 +1,258 @@
 package edu.cerp.checkin.ui;
 
 import edu.cerp.checkin.logic.SesionService;
+import edu.cerp.checkin.model.Inscripcion;
 
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.time.format.DateTimeFormatter;
 
+/**
+ * Clase que muestra la interfaz gráfica de Check In.
+ */
 public class CheckInGUI {
 
+    /**
+     * Muestra la ventana de Check In.
+     * @param service Servicio que gestiona las inscripciones.
+     */
     public static void show(SesionService service) {
-        //Ventana
-        JFrame ventana = new JFrame("Ventana");
+        // Ventana principal
+        JFrame ventana = new JFrame("Check In Aula");
         ventana.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        ventana.setSize(500, 400);
+        ventana.setSize(800, 600);
         ventana.setLayout(new BorderLayout());
 
-        //Panel
-        JPanel panel = new JPanel(new GridLayout(3,2));
+        // Panel de fondo con degradado
+        JPanel panelFondo = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
+                Color color1 = new Color(70, 130, 180);   // azul oscuro
+                Color color2 = new Color(176, 224, 230);  // azul claro
+                int w = getWidth();
+                int h = getHeight();
+                GradientPaint gp = new GradientPaint(0, 0, color1, 0, h, color2);
+                g2d.setPaint(gp);
+                g2d.fillRect(0, 0, w, h);
+            }
+        };
+        panelFondo.setLayout(new BorderLayout(10, 10));
+        ventana.setContentPane(panelFondo);
 
-        //Etiquetas
+        // Panel superior: Formulario de entrada
+        JPanel panelSuperior = new JPanel();
+        panelSuperior.setOpaque(false);
+        panelSuperior.setLayout(new BorderLayout());
+        
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // Etiquetas
         JLabel nombreL = new JLabel("Ingresa el nombre");
         JLabel documentoL = new JLabel("Ingresa el documento");
-        JLabel cursoL = new JLabel("Ingresa el curso");
+        JLabel cursoL = new JLabel("Selecciona el curso");
 
-        //Imputs
+        // Campos de texto
         JTextField nombre = new JTextField();
         JTextField documento = new JTextField();
-        JTextField curso = new JTextField();
 
-        panel.add(nombreL);
-        panel.add(nombre);
-        panel.add(documentoL);
-        panel.add(documento);
-        panel.add(cursoL);
-        panel.add(curso);
+        // Dropdown para curso
+        String[] cursos = {"Prog 1", "Prog 2", "Base de Datos", "Redes", "Graduado"};
+        JComboBox<String> comboCurso = new JComboBox<>(cursos);
+        comboCurso.setPreferredSize(new Dimension(150, 25));
+        comboCurso.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 
-        ventana.add(panel);
+        // Mejoras visuales para JTextField
+        Font fuenteCampos = new Font("Segoe UI", Font.PLAIN, 12);
+        nombre.setFont(fuenteCampos);
+        documento.setFont(fuenteCampos);
 
-        //---Comenzamos con la conexion del GUI con el sistema pre establecido---
+        nombre.setPreferredSize(new Dimension(150, 25));
+        documento.setPreferredSize(new Dimension(150, 25));
 
-        //Panel de Botones, creado y añadido
-        JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        Border bordeSuave = BorderFactory.createLineBorder(new Color(200, 200, 200), 1);
+        nombre.setBorder(bordeSuave);
+        documento.setBorder(bordeSuave);
 
-        JButton registrarBtn = new JButton("Registrar");
-        JButton listarBtn = new JButton("Listar");
-        JButton buscarBtn = new JButton("Buscar");
-        JButton resumenBtn = new JButton("Resumen");
+        nombre.setBackground(new Color(245, 245, 245));
+        documento.setBackground(new Color(245, 245, 245));
 
-        botones.add(registrarBtn);
-        botones.add(listarBtn);
-        botones.add(buscarBtn);
-        botones.add(resumenBtn);
+        // Primera fila: nombre
+        gbc.gridx = 0; gbc.gridy = 0;
+        panel.add(nombreL, gbc);
+        gbc.gridx = 1;
+        panel.add(nombre, gbc);
 
-        ventana.add(botones, BorderLayout.SOUTH);
+        // Segunda fila: documento
+        gbc.gridx = 0; gbc.gridy = 1;
+        panel.add(documentoL, gbc);
+        gbc.gridx = 1;
+        panel.add(documento, gbc);
 
-        //Funcionalidad del boton registrar
-        registrarBtn.addActionListener(e -> {
-            service.registrar(nombre.getText(), documento.getText(), curso.getText());
+        // Tercera fila: curso (dropdown)
+        gbc.gridx = 0; gbc.gridy = 2;
+        panel.add(cursoL, gbc);
+        gbc.gridx = 1;
+        panel.add(comboCurso, gbc);
 
-            JOptionPane.showMessageDialog(ventana, "✔ Inscripción registrada");
+        panelSuperior.add(panel, BorderLayout.CENTER);
+
+        // Panel central: Tabla de inscripciones
+        JPanel panelCentro = new JPanel(new BorderLayout());
+        panelCentro.setOpaque(false);
+        panelCentro.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+
+        JLabel tituloTabla = new JLabel("Inscripciones Registradas");
+        tituloTabla.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        tituloTabla.setForeground(Color.WHITE);
+        panelCentro.add(tituloTabla, BorderLayout.NORTH);
+
+        // Crear modelo de tabla
+        String[] columnas = {"Nombre", "Documento", "Curso", "Fecha y Hora"};
+        DefaultTableModel modeloTabla = new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // No editable
+            }
+        };
+
+        JTable tabla = new JTable(modeloTabla);
+        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        tabla.setRowHeight(25);
+        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        tabla.getTableHeader().setBackground(new Color(70, 130, 180));
+        tabla.getTableHeader().setForeground(Color.WHITE);
+
+        JScrollPane scrollPane = new JScrollPane(tabla);
+        scrollPane.setPreferredSize(new Dimension(750, 250));
+        panelCentro.add(scrollPane, BorderLayout.CENTER);
+
+        // Método para actualizar la tabla
+        Runnable actualizarTabla = () -> {
+            modeloTabla.setRowCount(0); // Limpiar tabla
+            DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+            for (Inscripcion insc : service.listar()) {
+                modeloTabla.addRow(new Object[]{
+                    insc.getNombre(),
+                    insc.getDocumento(),
+                    insc.getCurso(),
+                    insc.getFechaHora().format(formato)
+                });
+            }
+        };
+
+        // Cargar datos iniciales en la tabla
+        actualizarTabla.run();
+
+        // Panel de botones
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        panelBotones.setOpaque(false);
+
+        // Botón Check In
+        JButton btnCheckIn = new JButton("Check In");
+        btnCheckIn.setPreferredSize(new Dimension(120, 40));
+        btnCheckIn.setBackground(new Color(70, 130, 180));
+        btnCheckIn.setForeground(Color.WHITE);
+        btnCheckIn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btnCheckIn.setFocusPainted(false);
+        btnCheckIn.setBorderPainted(false);
+        btnCheckIn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Hover botón
+        btnCheckIn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btnCheckIn.setBackground(new Color(100, 149, 237));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btnCheckIn.setBackground(new Color(70, 130, 180));
+            }
+        });
+
+        // Acción al presionar Check In
+        btnCheckIn.addActionListener(e -> {
+            String nombreValor = nombre.getText();
+            String documentoValor = documento.getText();
+            String cursoValor = (String) comboCurso.getSelectedItem();
+
+            if(nombreValor.isBlank() || documentoValor.isBlank() || cursoValor.isBlank()) {
+                JOptionPane.showMessageDialog(ventana, "Por favor completa todos los campos");
+                return;
+            }
+
+            service.registrar(nombreValor, documentoValor, cursoValor);
+            JOptionPane.showMessageDialog(ventana, "Check In registrado correctamente");
 
             nombre.setText("");
             documento.setText("");
-            curso.setText("");
+            comboCurso.setSelectedIndex(0);
+            
+            // Actualizar la tabla después de registrar
+            actualizarTabla.run();
         });
 
-        // Funcionalidad del boton Listar
-        listarBtn.addActionListener(e -> {
-            mostrarTabla(service.listar());
+        // Botón Actualizar
+        JButton btnActualizar = new JButton("Actualizar");
+        btnActualizar.setPreferredSize(new Dimension(120, 40));
+        btnActualizar.setBackground(new Color(60, 179, 113));
+        btnActualizar.setForeground(Color.WHITE);
+        btnActualizar.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btnActualizar.setFocusPainted(false);
+        btnActualizar.setBorderPainted(false);
+        btnActualizar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        btnActualizar.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btnActualizar.setBackground(new Color(90, 209, 143));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btnActualizar.setBackground(new Color(60, 179, 113));
+            }
         });
 
-        // Buscar
-        buscarBtn.addActionListener(e -> {
-            String q = JOptionPane.showInputDialog("Texto a buscar:");
-            mostrarTabla(service.buscar(q));
+        btnActualizar.addActionListener(e -> {
+            actualizarTabla.run();
+            JOptionPane.showMessageDialog(ventana, "Tabla actualizada");
         });
 
-        // Resumen
-        resumenBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(ventana, service.resumen());
+        // Botón Cancelar
+        JButton btnCancelar = new JButton("Salir");
+        btnCancelar.setPreferredSize(new Dimension(120, 40));
+        btnCancelar.setBackground(new Color(220, 20, 60));
+        btnCancelar.setForeground(Color.WHITE);
+        btnCancelar.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btnCancelar.setFocusPainted(false);
+        btnCancelar.setBorderPainted(false);
+        btnCancelar.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        btnCancelar.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btnCancelar.setBackground(new Color(255, 69, 90));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btnCancelar.setBackground(new Color(220, 20, 60));
+            }
         });
 
+        btnCancelar.addActionListener(e -> ventana.dispose());
+
+        panelBotones.add(btnCheckIn);
+        panelBotones.add(btnActualizar);
+        panelBotones.add(btnCancelar);
+
+        // Agregar paneles a la ventana
+        panelFondo.add(panelSuperior, BorderLayout.NORTH);
+        panelFondo.add(panelCentro, BorderLayout.CENTER);
+        panelFondo.add(panelBotones, BorderLayout.SOUTH);
+
+        ventana.setLocationRelativeTo(null); // Centrar ventana
         ventana.setVisible(true);
     }
-
-    //Se crea un motodo "Mostrar tabla" para lidiar con el listado, y busqueda de forma mas limpia
-    private static void mostrarTabla(java.util.List<edu.cerp.checkin.model.Inscripcion> lista) {
-        JFrame frame = new JFrame("Resultados");
-        frame.setSize(500, 300);
-
-        String[] columnas = {"Nombre", "Documento", "Curso", "Fecha/Hora"};
-        String[][] datos = new String[lista.size()][4];
-
-        for (int i = 0; i < lista.size(); i++) {
-            var ins = lista.get(i);
-            datos[i][0] = ins.getNombre();
-            datos[i][1] = ins.getDocumento();
-            datos[i][2] = ins.getCurso();
-            datos[i][3] = ins.getFechaHora().toString();
-        }
-
-        JTable tabla = new JTable(datos, columnas);
-        frame.add(new JScrollPane(tabla));
-
-        frame.setVisible(true);
-    }
-
-
 }

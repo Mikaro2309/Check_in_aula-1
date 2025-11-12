@@ -28,8 +28,6 @@ public class CheckInGUI {
     public static void show(SesionService service) {
         // Ventana principal
         JFrame ventana = new JFrame("Check In Aula");
-        // Ventana principal
-        JFrame ventana = new JFrame("Check In Aula");
         ventana.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         ventana.setSize(800, 600);
         ventana.setLayout(new BorderLayout());

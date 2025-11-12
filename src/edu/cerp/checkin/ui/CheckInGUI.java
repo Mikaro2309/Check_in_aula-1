@@ -12,13 +12,22 @@ import java.time.format.DateTimeFormatter;
 /**
  * Clase que muestra la interfaz gráfica de Check In.
  */
+/**
+ * Clase que muestra la interfaz gráfica de Check In.
+ */
 public class CheckInGUI {
 
     /**
      * Muestra la ventana de Check In.
      * @param service Servicio que gestiona las inscripciones.
      */
+    /**
+     * Muestra la ventana de Check In.
+     * @param service Servicio que gestiona las inscripciones.
+     */
     public static void show(SesionService service) {
+        // Ventana principal
+        JFrame ventana = new JFrame("Check In Aula");
         // Ventana principal
         JFrame ventana = new JFrame("Check In Aula");
         ventana.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -60,6 +69,7 @@ public class CheckInGUI {
         JLabel documentoL = new JLabel("Ingresa el documento");
         JLabel cursoL = new JLabel("Selecciona el curso");
 
+        // Campos de texto
         // Campos de texto
         JTextField nombre = new JTextField();
         JTextField documento = new JTextField();
